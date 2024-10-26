@@ -5,11 +5,17 @@ import random
 #Initialize the pygame
 pygame.init()
 
+pygame.mixer.init() #To play the sound
+
+pygame.mixer.music.load('ROSÉ___Bruno_Mars_-_APT.__Official_Music_Video_(256k).mp3')
+
+pygame.mixer.music.play(loops = -1)
+
 #Define Colors
 white = (255, 255, 255)
 yellow = (255, 255, 102)
 black = (0, 0, 0)
-red = (213, 50, 80)
+pink = (255,105,180)
 green = (0, 255, 0)
 blue = (50, 153, 213)
 
@@ -30,7 +36,7 @@ score_font = pygame.font.SysFont("comicsansms", 35) #Font for scores
 #function to draw the snake on the screen
 def our_snake(snake_block, snake_list):
     for x in snake_list:
-        pygame.draw.rect(dis, white, [x[0], x[1], snake_block, snake_block]) # Draw each segment of the snake
+        pygame.draw.rect(dis, black, [x[0], x[1], snake_block, snake_block]) # Draw each segment of the snake
 
 #Function to display messages on the screen
 def message(msg, color):
@@ -58,8 +64,8 @@ def gameLoop():
 #Main game loop
     while not game_over:
         while game_close == True: #Generate  OverScreen loop 
-            dis.fill(black)   #Fill the screen with black
-            message("You Lost! Press C-Continue or E-Exit", white) #Display loss message
+            dis.fill(pink)   #Fill the screen with black
+            message("You Lost! Press C-Continue or E-Exit", black) #Display loss message
             pygame.display.update()  #Update the display
 
 #Check for key events
@@ -93,8 +99,8 @@ def gameLoop():
             game_close = True
         x1 += x1_change
         y1 += y1_change
-        dis.fill(black) #Fill the screen with black
-        pygame.draw.rect(dis, red, [foodx, foody, snake_block, snake_block]) #Draw the food
+        dis.fill(pink) #Fill the screen with black
+        pygame.draw.rect(dis, white, [foodx, foody, snake_block, snake_block]) #Draw the food
 
 #Update the snake's haed and body
         snake_head = []
