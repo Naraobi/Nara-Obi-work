@@ -1,0 +1,162 @@
+import pygame
+import sys
+import random
+
+pygame.init()
+pygame.mixer.init() #To play the sound
+
+pygame.mixer.music.load('ROSÉ___Bruno_Mars_-_APT.__Official_Music_Video_(256k).mp3')
+
+pygame.mixer.music.play(loops = -1)
+snake_speed = 6
+# Set the display dimensions
+Width = 600
+height = 400
+snake_size = 20
+snake_width = Width // snake_size
+snake_height = height // snake_size
+up = (0, -1)
+down = (0, 1)
+left = (-1, 0)
+right = (1, 0)
+font = pygame.font.SysFont("bahnschrift", 25)
+screen = pygame.display.set_mode((Width, height), 0, 32)
+
+white = (255, 255, 255)
+black = (0, 0, 0)
+pink = (255, 105, 180)
+blue = (50, 153, 213)
+red = (255, 0, 0)
+
+class Snake(object):
+    def __init__(self):
+        self.length = 1
+        self.position = [(Width // 2, height // 2)]
+        self.direction = random.choice([up, down, left, right])
+        self.color = black
+    
+    def get_head_position(self):
+        return self.position[0]
+
+    def turn(self, point):
+        if self.length > 1 and (point[0] * -1, point[1] * -1) == self.direction:
+            return
+        else:
+            self.direction = point
+
+    def move(self):
+        current = self.get_head_position()
+        x, y = self.direction
+        new = ((current[0] + (x * snake_size)) % Width, (current[1] + (y * snake_size)) % height)
+
+        if len(self.position) > 2 and new in self.position[2:]:
+            self.reset()
+        else:
+            self.position.insert(0, new)
+            if len(self.position) > self.length:
+                self.position.pop()
+
+    def reset(self):
+        self.length = 1
+        self.position = [(Width // 2, height // 2)]
+        self.direction = random.choice([up, down, left, right])
+        self.show_restart_message()
+
+    def show_restart_message(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            screen.fill(white)
+            message = font.render("Press C to continue or E to exit", True, black)
+            screen.blit(message,(Width//2 - message.get_width() // 2, height//2))
+            pygame.display.update()
+
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_c]:
+                    return True
+            if keys[pygame.K_e]:
+                pygame.quit()
+                sys.exit()
+                pygame.time.delay(100)  
+
+
+    def draw(self, surface):
+        for pos in self.position:
+            rect = pygame.Rect(pos[0], pos[1], snake_size, snake_size)
+            pygame.draw.rect(surface, self.color, rect)
+            pygame.draw.rect(surface, black, rect, 1)
+
+    def handle_keys(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # Quit the game
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.turn(up)
+                elif event.key == pygame.K_DOWN:
+                    self.turn(down)
+                elif event.key == pygame.K_LEFT:
+                    self.turn(left)
+                elif event.key == pygame.K_RIGHT:
+                    self.turn(right)
+
+
+class Food(object):
+    def __init__(self):
+        self.position = (0, 0)
+        self.color = red
+        self.randomize_position()
+
+    def randomize_position(self):
+        self.position = (random.randint(0, snake_width - 1) * snake_size, random.randint(0, snake_height - 1) * snake_size)
+
+    def draw(self, surface):
+        rect = pygame.Rect(self.position[0], self.position[1], snake_size, snake_size)
+        pygame.draw.rect(surface, self.color, rect)
+        pygame.draw.rect(surface, black, rect, 1)
+
+
+def draw_grid(surface):
+    for y in range(int(snake_height)):
+        for x in range(int(snake_width)):
+            if (x + y) % 2 == 0:
+                rect = pygame.Rect(x * snake_size, y * snake_size, snake_size, snake_size)
+                pygame.draw.rect(surface, pink, rect)
+            else:
+                rect = pygame.Rect(x * snake_size, y * snake_size, snake_size, snake_size)
+                pygame.draw.rect(surface, white, rect)
+
+
+def main():
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((Width, height), 0, 32)
+    pygame.display.set_caption('Snake Game')
+
+    surface = pygame.Surface(screen.get_size())
+    surface = surface.convert()
+
+    snake = Snake()
+    food = Food()
+    
+    score = 0
+    while True:
+        clock.tick(snake_speed)
+        snake.handle_keys()
+        draw_grid(surface)
+        snake.move()
+        if snake.get_head_position() == food.position:
+            snake.length += 1
+            score += 1
+            food.randomize_position()
+        snake.draw(surface)
+        food.draw(surface)
+        screen.blit(surface, (0, 0))
+        text = font.render(f"Score: {score}", True, black)
+        screen.blit(text, (5, 10))
+        pygame.display.update()
+
+if __name__ == "__main__":
+    main()
