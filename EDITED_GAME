@@ -26,6 +26,7 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 pink = (255, 105, 180)
 blue = (50, 153, 213)
+LightPink = (255,182,193)
 red = (255, 0, 0)
 
 class Snake(object):
@@ -124,7 +125,7 @@ def draw_grid(surface):
         for x in range(int(snake_width)):
             if (x + y) % 2 == 0:
                 rect = pygame.Rect(x * snake_size, y * snake_size, snake_size, snake_size)
-                pygame.draw.rect(surface, pink, rect)
+                pygame.draw.rect(surface, LightPink, rect)
             else:
                 rect = pygame.Rect(x * snake_size, y * snake_size, snake_size, snake_size)
                 pygame.draw.rect(surface, white, rect)
