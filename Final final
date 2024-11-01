@@ -3,176 +3,194 @@ import sys
 import random
 from pygame.math import Vector2
 
+#Initialize Pygame and the mixer module for playing sound effect and music
 pygame.init()
 pygame.mixer.init()
 
 # Load background music
 pygame.mixer.music.load('ROSÉ___Bruno_Mars_-_APT.__Official_Music_Video_(256k).mp3')
-pygame.mixer.music.play(loops=-1)
+pygame.mixer.music.play(loops=-1)#Makes the music pplay indefinitely
 
-# Load the collision sound
-collision_sound = pygame.mixer.Sound('Snake_Sound_Effect.mp3')  # Make sure to replace with your sound file
+# Load the collision sound effect 
+collision_sound = pygame.mixer.Sound('Gameover.mp3')  # Make sure to replace with your sound file
 
-snake_speed = 5
-cell_size = 30
-number_cell = 25 
-font = pygame.font.SysFont("bahnschrift", 25)
+snake_speed = 5#Set the speed sound effect for when the snake collides with something 
+cell_size = 30#Set size of each cell in the game grid
+number_cell = 25 #define the number of cell along each axis
+font = pygame.font.SysFont("bahnschrift", 25)#Set up front object for displaying text 
 scorefont = pygame.font.SysFont("bahnschrift", 25)
 
-# Set up the display
-screen = pygame.display.set_mode((cell_size * number_cell, cell_size * number_cell))
-food_surface = pygame.image.load("snakefoods.png")
-clock = pygame.time.Clock()
+# Set up the display window with dimensions based on grid size and cell size
+screen = pygame.display.set_mode((cell_size * number_cell, cell_size * number_cell)) 
+food_surface = pygame.image.load("cherry.png")
+clock = pygame.time.Clock()#Create a clock object to control the game frame rate
 
 # Define colors
-white = (255, 255, 255)
-black = (0, 0, 0)
-lightpink = (255, 182, 193)
-red = (255, 0, 0)
+white = (255, 255, 255)#RGB color for white
+black = (0, 0, 0)#RGB color for black(used for snake)
+lightpink = (255, 182, 193)#RGB color for light pink
+red = (255, 0, 0)#RGB color red
 
+#Define the snake class to handle snake properties and behavior
 class Snake:
     def __init__(self):
-        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
-        self.direction = Vector2(1, 0)
-        self.add_segment = False
+        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]#Initializing the snake's starting body as a list of grid (Using vector for x and y coordinates)
+        self.direction = Vector2(1, 0)#Set the initial direction of movement(moving right)
+        self.add_segment = False#Flag to track if the snake should grow(Add a new ssegment)
 
-    def draw(self):
-        for segment in self.body:
+    def draw(self):#Method to draw the snake of the screen
+        for segment in self.body:#loop through each segment in the snake body and draw a rectangle at its position
             segment_rect = (segment.x * cell_size, segment.y * cell_size, cell_size, cell_size)
-            pygame.draw.rect(screen, black, segment_rect, 0, 7)
+            pygame.draw.rect(screen, black, segment_rect, 0, 7)#It draw segment as a black rounded rectangle
 
+    #Method to update the snake position and handle screen wrapping and growth
     def update(self):
-        self.body.insert(0, self.body[0] + self.direction)
+        self.body.insert(0, self.body[0] + self.direction)#Move the snake by adding a new head in the current direction and removing the last segment
 
-        # Wrap around the screen
+        # Wrap around the screen  horizontally
+        #If head moves past the left edge ,it wraps to the left
         if self.body[0].x >= number_cell:
-            self.body[0].x = 0
+            self.body[0].x = 0#If the head moves past the left edge, it wraps to the right
         elif self.body[0].x < 0:
             self.body[0].x = number_cell - 1
-        
+        #Wrap around the screen vertically
+        #If the head moves past the bottom edge, it wraps to the top
         if self.body[0].y >= number_cell:
             self.body[0].y = 0
-        elif self.body[0].y < 0:
+        elif self.body[0].y < 0:#If the head moves past the top edge, it wraps to the bottom
             self.body[0].y = number_cell - 1
 
+        #Check if the snake needs to grow
         if self.add_segment:
-            self.add_segment = False
+            self.add_segment = False#Reset the add _segment flag(snake has grown)
         else:
-            self.body = self.body[:-1]
-
+            self.body = self.body[:-1]#Remove the last segment of the body to keep the snake the same lenght
+    #Method to reset the snake to its initial position and direction
     def reset(self):
-        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
-        self.direction = Vector2(1, 0)
+        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]#set the snake body back to the starting position
+        self.direction = Vector2(1, 0)#Set the direction to the right
 
+#Define the food class to handle food properties and behavior
 class Food:
     def __init__(self, snake_body):
-        self.position = self.randomize_position(snake_body)
-        self.color = red
-
+        self.position = self.randomize_position(snake_body)#Initialize food position to a random cell that does not overlap with the snake body
+        self.color = red#Set the color of the food  
+    
+    #Method to draw the food on the screen
     def draw(self):
-        rect = pygame.Rect(self.position.x * cell_size, self.position.y * cell_size, cell_size, cell_size)
-        screen.blit(food_surface, rect)
+        rect = pygame.Rect(self.position.x * cell_size, self.position.y * cell_size, cell_size, cell_size)#Create a rectangle for the food based on its position and cell size
+        screen.blit(food_surface, rect)#Draw the food on the screen using an image(food image file)
 
+    #Method to generate a random cell position within the grid
     def randomize_cell(self):
         x = random.randint(0, number_cell - 1)
         y = random.randint(0, number_cell - 1)
         return Vector2(x, y)
 
+    #Method to ensure food appears in a position not occupied by the snake
     def randomize_position(self, snake_body):
         position = self.randomize_cell()
-        while position in snake_body:
+        while position in snake_body:#Keep randomizing position until it is not on the snake's body
             position = self.randomize_cell() 
         return position
 
+#Define the game class to manage game elements and logic
 class Game:
     def __init__(self):
-        self.snake = Snake()
+        self.snake = Snake()#Initializing a snake and a food instance, passing the snake's body to avoid overlap
         self.food = Food(self.snake.body)
-        self.score = 0
+        self.score = 0#Initialize score and difficulty level
         self.difficulty = "Easy"  # Initial difficulty level
 
+    #Method to draw all game element
     def draw(self):
-        self.food.draw()
+        self.food.draw()#Draw the food and snake on the screen
         self.snake.draw()
 
         # Render the difficulty level
         difficulty_surface = font.render(self.difficulty, True, black)
         screen.blit(difficulty_surface, (cell_size * number_cell // 2 - difficulty_surface.get_width() // 2, 5))
 
+    #Update method to handle the main game logic for each frame
     def update(self): 
-        self.snake.update()
-        self.check_collision_with_food()
-        self.check_collision_with_tail()
+        self.snake.update()#Update the snake position
+        self.check_collision_with_food()#Check if the snake's head has collided with the food
+        self.check_collision_with_tail()#Check if the snake's head has collided with its own tail
 
+    #Method to handle collision between the snake and food 
     def check_collision_with_food(self):
-        if self.snake.body[0] == self.food.position:
+        if self.snake.body[0] == self.food.position:#Check if the snake's head is in the same position as the food
             self.food.position = self.food.randomize_position(self.snake.body)
-            self.snake.add_segment = True
-            self.score += 1
+            self.snake.add_segment = True#Set flag to add a new segment to the snake's body
+            self.score += 1#Increment the score by 1
             
-            global snake_speed
+            global snake_speed#Access the global snake_speed variable
             
-            # Update speed and difficulty
+            # Update speed and difficulty level based pn the score
             if self.score == 8:
-                snake_speed += 4
+                snake_speed += 4#it increase the snake speed and set to difficulty to medium when the score reaches 8 points
                 self.difficulty = "Medium"  # Change difficulty to Medium
             elif self.score >= 16 and (self.score - 16) % 16 == 0:
-                snake_speed += 6
+                snake_speed += 6#It increases the snake speed and set difficulty to hard when score raeches 16 in every 16 points
                 self.difficulty = "Hard"  # Change difficulty to Hard
 
+    #Method to show a restart message and wait for user input after game over
     def show_restart_message(self):
-        while True:
-            for event in pygame.event.get():
+        while True:#Enter a loop to wait for the user to restart or quit 
+            for event in pygame.event.get():#If the user closes the window,it quit the game
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
-            screen.fill(white)
+            screen.fill(white)#it fill the screen with white background when game is over
 
             # Calculate the position to center the message on the screen
             message = font.render("Press C to continue or E to exit", True, black)
             message_rect = message.get_rect(center=(cell_size * number_cell // 2, cell_size * number_cell // 2))
-            screen.blit(message, message_rect)
+            screen.blit(message, message_rect)#Display the message on the screen
 
-            pygame.display.update()
+            pygame.display.update()#Update the display to show the restart messsage
 
-            keys = pygame.key.get_pressed()
+            keys = pygame.key.get_pressed()#Check if the user presses'C' to continue or 'E' to exit
             if keys[pygame.K_c]:
                 self.reset_game()  # Reset game if continuing
-                return
+                return #Exit the loop to resume the game 
             if keys[pygame.K_e]:
-                pygame.quit()
-                sys.exit()
+                pygame.quit()#Quit pygame
+                sys.exit()#Exit the program
 
+    #Method to reset the game state to its initial values 
     def reset_game(self):
         global snake_speed  # Declare snake_speed as global
-        self.snake.reset()
-        self.food.position = self.food.randomize_position(self.snake.body)
-        self.score = 0
+        self.snake.reset()#Reset the snake to its initital position and direction
+        self.food.position = self.food.randomize_position(self.snake.body)#Randomize the food position so it doesn't overlap with the snake
+        self.score = 0 #Reset score and difficuly level
         self.difficulty = "Easy"  # Reset difficulty to Easy
-        snake_speed = 6  # Reset speed to the original speed
+        snake_speed = 5 # Reset speed to the original speed
         pygame.mixer.music.stop()  # Stop the current music
         pygame.mixer.music.play(loops=-1)  # Restart the music
 
+    #Method to check if the snake collides with its own tail
     def check_collision_with_tail(self):
-        headless_body = self.snake.body[1:]
+        headless_body = self.snake.body[1:]#Get the snake's body excluding the head
 
         # Check if the head collides with the tail
         if self.snake.body[0] in headless_body:
-            print("Collision detected!")  # Debugging line
-            collision_sound.play()  # Play the collision sound
-            self.show_restart_message()  # Show message on self-collision
+            collision_sound.play()  # Play the collision sound effect
+            self.show_restart_message()  # Show restart message after self-collision
 
+#Method function to set up and run the game loop 
 def main():
-    pygame.display.set_caption('Snake Game')
-    game = Game()
+    pygame.display.set_caption('Snake Game')#Set the window title (SNAKE GAME)
+    game = Game()#Create a new instance
 
+    #Main game loop, which runs the user exits 
     while True: 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):
+        for event in pygame.event.get():#Handle events such as quitting and keyboard input
+            if event.type == pygame.QUIT:#Check if the user wants to quit
+                pygame.quit()#Quit pygame
+                sys.exit()#Exut the program
+            if event.type == pygame.KEYDOWN:#Handle keyboard inputs for controlling the snake direction
+                if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):#Check direction to up,left,or right to ensuring no reverse movements
                     game.snake.direction = Vector2(0, -1)
                 if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0, -1):
                     game.snake.direction = Vector2(0, 1)
@@ -181,12 +199,12 @@ def main():
                 if event.key == pygame.K_RIGHT and game.snake.direction != Vector2(-1, 0):
                     game.snake.direction = Vector2(1, 0)
 
-        screen.fill(lightpink)
-        game.update()  
-        game.draw()
-        score_surface = scorefont.render(f"Score: {game.score}", True, black)
+        screen.fill(lightpink)#Fill the screen with a light pink color for the background
+        game.update() #Update game state, including snake movement and collision check
+        game.draw()#Draw game elements like the snake,food,and difficulty level
+        score_surface = scorefont.render(f"Score: {game.score}", True, black)#Display the current score in the top left corner 
         screen.blit(score_surface, (5, 10))
-        pygame.display.update()
+        pygame.display.update()#Update
         clock.tick(snake_speed)
 
 if __name__ == "__main__":
