@@ -3,91 +3,89 @@ import sys
 import random
 import mysql.connector
 from pygame.math import Vector2 
+#To import the built-in funitions that will be required for the code
 
-# Initialize Pygame and the mixer module for playing sound effects and music
-pygame.init()
-pygame.mixer.init()
+pygame.init() # Initialize Pygame and the mixer module for playing sound effects and music
+pygame.mixer.init() #To innitialize or set-up the music
 
-# Load background music
-pygame.mixer.music.load('ROSÉ___Bruno_Mars_-_APT.__Official_Music_Video_(256k).mp3')
-pygame.mixer.music.play(loops=-1)
+pygame.mixer.music.load('ROSÉ___Bruno_Mars_-_APT.__Official_Music_Video_(256k).mp3') #To load the music
+pygame.mixer.music.play(loops=-1)#To play the sound infinitely
 
 # Load sound effects
-collision_sound = pygame.mixer.Sound('Gameover.mp3')
-eat_sound = pygame.mixer.Sound('Mp3 Editor_241102151859.mp3')
+collision_sound = pygame.mixer.Sound('Gameover.mp3') #Sound for when the game is over
+eat_sound = pygame.mixer.Sound('Mp3 Editor_241102151859.mp3') #Sound for when the snake eats the food
+clock = pygame.time.Clock()  # Create a clock object to control the game frame rate
 
 # Game settings
-snake_speed = 5
-cell_size = 30
-number_cell = 25
-font = pygame.font.SysFont("bahnschrift", 25)
-scorefont = pygame.font.SysFont("bahnschrift", 25)
+snake_speed = 5 #The speed per mintue
+cell_size = 30 #The  Entire size of the screen
+number_cell = 25 #The number of the cells in the screen
+font = pygame.font.SysFont("bahnschrift", 25) #The font to be used in the game
+scorefont = pygame.font.SysFont("bahnschrift", 25) #The font to be used for the score in the game
 
 # Set up the display window
-screen = pygame.display.set_mode((cell_size * number_cell, cell_size * number_cell))
-food_surface = pygame.image.load("cherry.png")
-clock = pygame.time.Clock()
+screen = pygame.display.set_mode((cell_size * number_cell, cell_size * number_cell)) #This sets up the screen for the game
+food_surface = pygame.image.load("cherry.png") #This is to load image of the food
 
-# Define colors
+# Define RGB colors needed for the game
 white = (255, 255, 255)
 black = (0, 0, 0)
 lightpink = (255, 182, 193)
 red = (255, 0, 0)
 
-# Function to get player name
+# Function to get player name for storing in the database
 def get_player_name():
     name = ''
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                sys.exit()
+                sys.exit() #This checks if the user wnats to end the game and properly exits it 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN and name:
+                if event.key == pygame.K_RETURN and name: #This allows thee user to submit their details by presssing the enter key
                     return name
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == pygame.K_BACKSPACE: #This allows the removal of the last character of the user input
                     name = name[:-1]
                 else:
-                    name += event.unicode
-
+                    name += event.unicode #Add new characters based on what keys are pressed
         screen.fill(lightpink)
         input_surface = font.render(f"Enter your name: {name}", True, black)
         screen.blit(input_surface, (10, 10))
         pygame.display.update()
 
 # Database function to insert game stats
-def insert_game_stats(player_name, score, difficulty):
+def insert_game_stats(player_name, score, difficulty): #This is required for the database
     connection = mysql.connector.connect(
-        host='localhost',
-        user='root',
-        password='Chinara16@',
-        database='game'
+        host='localhost', #
+        user='root',    #Initial username
+        password='Chinara16@', #initial password
+        database='game' #The database name
     )
     cursor = connection.cursor()
     cursor.execute('''
         INSERT INTO GameStats (player_name, score, difficulty)
-        VALUES (%s, %s, %s)
-    ''', (player_name, score, difficulty))
-    connection.commit()
+        VALUES (%s, %s, %s)  
+    ''', (player_name, score, difficulty))  #this allows you to insert the requirements into the database
+    connection.commit() #To call all the functions names
     cursor.close()
     connection.close()
-player_name = get_player_name()
+player_name = get_player_name() #To define the player's name
 # Define the Snake class
 class Snake:
-    def __init__(self):
+    def __init__(self):    # Initializing the snake's starting body
         self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
-        self.direction = Vector2(1, 0)
-        self.add_segment = False
+        self.direction = Vector2(1, 0) # Set the initial direction of movement (moving right)
+        self.add_segment = False #To add segment is false since we are not yet adding a segment
 
-    def draw(self):
+    def draw(self):  # Method to draw the snake on the screen
         for segment in self.body:
             segment_rect = (segment.x * cell_size, segment.y * cell_size, cell_size, cell_size)
-            pygame.draw.rect(screen, black, segment_rect, 0, 7)
+            pygame.draw.rect(screen, black, segment_rect, 0, 7) #To draw the snake and also make it more pleasing to the eyes using the co ordinates 
 
     def update(self):
-        self.body.insert(0, self.body[0] + self.direction)
+        self.body.insert(0, self.body[0] + self.direction)  # Move the snake by adding a new head in the current direction
         # Wrap around the screen
-        self.body[0].x %= number_cell
+        self.body[0].x %= number_cell 
         self.body[0].y %= number_cell
         
         if self.add_segment:
@@ -96,21 +94,21 @@ class Snake:
             self.body.pop()  # Remove the last segment if not eating
 
     def reset(self):
-        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)]
-        self.direction = Vector2(1, 0)
+        self.body = [Vector2(6, 9), Vector2(5, 9), Vector2(4, 9)] # Reset the snake body to the starting position
+        self.direction = Vector2(1, 0) #For resting the entire game back to the initial way
 
 # Define the Food class
 class Food:
-    def __init__(self, snake_body):
-        self.position = self.randomize_position(snake_body)
-        self.color = red
+    def __init__(self, snake_body): #To initialize the food
+        self.position = self.randomize_position(snake_body) #randomixe the food positions
+        self.color = red #To set teh color of the food
 
     def draw(self):
-        rect = pygame.Rect(self.position.x * cell_size, self.position.y * cell_size, cell_size, cell_size)
-        screen.blit(food_surface, rect)
+        rect = pygame.Rect(self.position.x * cell_size, self.position.y * cell_size, cell_size, cell_size) #To draw out the food
+        screen.blit(food_surface, rect) #To display the food on the screen
 
     def randomize_cell(self):
-        return Vector2(random.randint(0, number_cell - 1), random.randint(0, number_cell - 1))
+        return Vector2(random.randint(0, number_cell - 1), random.randint(0, number_cell - 1))  # To make the food move randommly around the frame
 
     def randomize_position(self, snake_body):
         position = self.randomize_cell()
@@ -118,101 +116,101 @@ class Food:
             position = self.randomize_cell()
         return position
 
-# Define the Game class
+# Define the game class to manage game elements and logic
 class Game:
     def __init__(self):
-        self.snake = Snake()
+        self.snake = Snake() #To call out the snake and the food
         self.food = Food(self.snake.body)
-        self.score = 0
-        self.difficulty = "Easy"
+        self.score = 0 #To set intial score to 0
+        self.difficulty = "Easy"  #To set intial difficulty to Easy
 
     def draw(self):
-        self.food.draw()
-        self.snake.draw()
-        difficulty_surface = font.render(self.difficulty, True, black)
-        screen.blit(difficulty_surface, (cell_size * number_cell // 2 - difficulty_surface.get_width() // 2, 5))
+        self.food.draw() #To draw out the food 
+        self.snake.draw() #To draw out the snake
+        difficulty_surface = font.render(self.difficulty, True, black) #To set the font for writing out the difficulty levels
+        screen.blit(difficulty_surface, (cell_size * number_cell // 2 - difficulty_surface.get_width() // 2, 5)) #to display the font on the screen
 
     def update(self):
         self.snake.update()
         self.check_collision_with_food()
-        self.check_collision_with_tail()
+        self.check_collision_with_tail() #To update the game
 
     def check_collision_with_food(self):
-        if self.snake.body[0] == self.food.position:
-            self.food.position = self.food.randomize_position(self.snake.body)
-            self.snake.add_segment = True  # Set the flag to grow the snake
-            self.score += 1
-            global snake_speed
-            eat_sound.play()
-            if self.score == 8:
-                snake_speed += 4
-                self.difficulty = "Medium"
-            elif self.score >= 16 and (self.score - 16) % 16 == 0:
-                snake_speed += 6
-                self.difficulty = "Hard"
+        if self.snake.body[0] == self.food.position: #This allows the head of the snake to be equal to the food
+            self.food.position = self.food.randomize_position(self.snake.body) #To randomize their positions
+            self.snake.add_segment = True  # Set to add a segment each time it collides withh the food to true
+            self.score += 1 #To increase the score when the snake collides with the food
+            global snake_speed #This is used to declare that the snake_speed has been defined before
+            eat_sound.play() #To play the sound when the snake eats the food
+            if self.score == 8: #If the score is up to 8
+                snake_speed += 4 #Increase the snake_speed by 4
+                self.difficulty = "Medium" #Change the difficulty to medium
+            elif self.score >= 16 and (self.score - 16) % 16 == 0: #If the score reaches or greater than 16 
+                snake_speed += 6 #Increase the snake speed by  6
+                self.difficulty = "Hard" #Change the difficulty to hard
 
     def show_restart_message(self, player_name):
-        insert_game_stats(player_name, self.score, self.difficulty)  # Save stats on game over
+        insert_game_stats(player_name, self.score, self.difficulty)  # Save all the database stats when the game is over
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
+            for event in pygame.event.get(): 
+                if event.type == pygame.QUIT: #Allows the user to exit the game bypressing the X button
                     pygame.quit()
                     sys.exit()
-            screen.fill(white)
-            message = font.render("Press C to continue or E to exit", True, black)
-            message_rect = message.get_rect(center=(cell_size * number_cell // 2, cell_size * number_cell // 2))
-            screen.blit(message, message_rect)
-            pygame.display.update()
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_c]:
-                self.reset_game()
-                return
-            if keys[pygame.K_e]:
-                pygame.quit()
-                sys.exit()
+            screen.fill(white)  #To change the background color to white
+            message = font.render("Press C to continue or E to exit", True, black) #This is the font for this text
+            message_rect = message.get_rect(center=(cell_size * number_cell // 2, cell_size * number_cell // 2)) #This allows to make the text at the center of the screen
+            screen.blit(message, message_rect)  #This allows you to display the text on the screen
+            pygame.display.update() #To update the game
+            keys = pygame.key.get_pressed() 
+            if keys[pygame.K_c]: # This means that if the Key C is pressed 
+                self.reset_game() #Reset the game
+                return #Return back to the game
+            if keys[pygame.K_e]: #This means that if the Key E is pressed
+                pygame.quit() #Quit the game
+                sys.exit() #Exit the frame
 
     def reset_game(self):
-        global snake_speed
-        self.snake.reset()
-        self.food.position = self.food.randomize_position(self.snake.body)
-        self.score = 0
-        self.difficulty = "Easy"
-        snake_speed = 5
-        pygame.mixer.music.play(loops=-1)
+        global snake_speed  #This is used to declare that the snake_speed has been defined before
+        self.snake.reset() #To reset the game
+        self.food.position = self.food.randomize_position(self.snake.body) #To rest the food to a random position
+        self.score = 0   #To set the score back to zero
+        self.difficulty = "Easy" #To reset the difficulty to Easy
+        snake_speed = 5 #To reset the speed back to the initial speed
+        pygame.mixer.music.play(loops=-1)  #To restart the music back
 
-    def check_collision_with_tail(self):
+    def check_collision_with_tail(self): # Check if the head collides with the last segment of the tail
         if self.snake.body[0] in self.snake.body[1:]:
-            pygame.mixer.music.stop()
-            collision_sound.play()
-            self.show_restart_message(player_name)
+            pygame.mixer.music.stop() #The music should stop
+            collision_sound.play() #Thhe sound effect should play
+            self.show_restart_message(player_name) #Reset the username
 
 # Main function
 def main():
-    pygame.display.set_caption('Snake Game')
+    pygame.display.set_caption('Snake Game')  # To set the caption of the game
     game = Game()
 
     while True:
-        for event in pygame.event.get():
+        for event in pygame.event.get(): #This allows the user to exit the game when the red x button is pressed
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):
-                    game.snake.direction = Vector2(0, -1)
-                if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0, -1):
-                    game.snake.direction = Vector2(0, 1)
-                if event.key == pygame.K_LEFT and game.snake.direction != Vector2(1, 0):
-                    game.snake.direction = Vector2(-1, 0)
-                if event.key == pygame.K_RIGHT and game.snake.direction != Vector2(-1, 0):
-                    game.snake.direction = Vector2(1, 0)
+                if event.key == pygame.K_UP and game.snake.direction != Vector2(0, 1):#if the key is pressed up and if the down key is pressed it will not go down
+                    game.snake.direction = Vector2(0, -1)     #This means if the key is pressed up  moves up  using those coordinate
+                if event.key == pygame.K_DOWN and game.snake.direction != Vector2(0, -1):#if the key is pressed dowm and if the up key is pressed it will not go down
+                    game.snake.direction = Vector2(0, 1)      #This means if the key is pressed down  moves down  using those coordinate
+                if event.key == pygame.K_LEFT and game.snake.direction != Vector2(1, 0):#if the key is pressed left and if the right key is pressed it will not go down
+                    game.snake.direction = Vector2(-1, 0)     #This means if the key is pressed left  moves left  using those coordinate
+                if event.key == pygame.K_RIGHT and game.snake.direction != Vector2(-1, 0):#if the key is pressed right  and if the left key is pressed it will not go down
+                    game.snake.direction = Vector2(1, 0)       #This means if the key is pressed right  moves right  using those coordinate
 
-        screen.fill(lightpink)
-        game.update()
+        screen.fill(lightpink)  #To fill the screen with lightpink
+        game.update() #To update the game
         game.draw()
-        score_surface = scorefont.render(f"Score: {game.score}", True, black)
-        screen.blit(score_surface, (5, 10))
-        pygame.display.update()
-        clock.tick(snake_speed)
+        score_surface = scorefont.render(f"Score: {game.score}", True, black)  # This is the font and the color used for the score and also the color
+        screen.blit(score_surface, (5, 10)) #To display the score on the screen
+        pygame.display.update() #To update the game 
+        clock.tick(snake_speed) #The timing of the game
 
 if __name__ == "__main__":
-    main()
+    main() #To call the function name
